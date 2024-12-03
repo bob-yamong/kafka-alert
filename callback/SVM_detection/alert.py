@@ -68,7 +68,7 @@ class Alert:
                     "fields": [
                         {
                         "name": "🏠 Container Name",
-                        "value": f"{container_data['host_name']}-{container_data['name']}",
+                        "value": f"[{container_data['host_name']}] {container_data['name']}",
                         "inline": False
                         },
                         {
