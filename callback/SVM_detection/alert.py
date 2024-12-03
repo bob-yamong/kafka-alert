@@ -56,7 +56,7 @@ class Alert:
     def send_alert(self, data: dict, container_data: dict = None):
         try:
             # 데이터 검증
-            if not all(key in data for key in ['timestamp', 'container_name', 'anomalies_detected', 'total_logs_analyzed']):
+            if not all(key in data for key in ['container_name', 'anomalies_detected', 'total_logs_analyzed', 'called_at', 'detected_at']):
                 raise ValueError("Missing required fields in data")
 
             self.client.post(
@@ -77,8 +77,13 @@ class Alert:
                         "inline": False
                         },
                         {
+                        "name": "⏰ Detected At",
+                        "value": str(data['detected_at']),
+                        "inline": True
+                        },
+                        {
                         "name": "⏰ Called At",
-                        "value": str(data['timestamp']),
+                        "value": str(data['called_at']),
                         "inline": True
                         },
                         {
