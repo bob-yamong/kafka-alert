@@ -1,7 +1,7 @@
 version: '0.0.1'
 
 services:
-  kafka-connect:
+  alert_server:
     image: registry.yamong.dev/alert_server:main
     build:
       context: .
