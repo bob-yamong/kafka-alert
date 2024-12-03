@@ -87,16 +87,16 @@ class Alert:
                         "inline": True
                         },
                         {
-                        "name": "📜 analyze Report",
+                        "name": "📜 Analyze Report",
                         "value": "-"*20,
                         },
                         {
-                        "name": "🔍 Total logs analyze",
+                        "name": "🔍 Total Logs Analyze",
                         "value": str(data["total_logs_analyzed"]),
                         "inline": True
                         },
                         {
-                        "name": "🚨 Anomalies detected",
+                        "name": "🚨 Anomalies Detected",
                         "value": str(data["anomalies_detected"]),
                         "inline": True
                         }
