@@ -87,7 +87,11 @@ class Alert:
                         "inline": True
                         },
                         {
-                        "name": "🔍 Total logs analyzedrce",
+                        "name": "📜 analyze Report",
+                        "value": "-"*20,
+                        },
+                        {
+                        "name": "🔍 Total logs analyze",
                         "value": str(data["total_logs_analyzed"]),
                         "inline": True
                         },
