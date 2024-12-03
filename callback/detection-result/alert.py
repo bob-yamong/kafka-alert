@@ -103,6 +103,7 @@ class Alert:
                     "title": "Suspicious Process Detection",
                     "description": f"{data['detection_time']}에 {container_data['host_name']} 호스트의 {container_data['name']} 컨테이너에서 이상 프로세스가 탐지되었습니다. PID: {data['pid']}",
                     "fields": fields,
+                    "color": 0xFF0000, 
                     "footer": {
                         "text": "Process Monitoring Security Alert System",
                         "icon_url": "https://avatars.githubusercontent.com/u/187281017?v=4"
