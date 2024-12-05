@@ -27,12 +27,17 @@ async def callback(key: str, value: dict) -> None:
                 )
                 .first()
             )
+            
+            server_name = db.query(models.Server).filter(
+                models.Server.id == container_query.Container.host_server
+            ).first()
 
             container_data = None
             if container_query:
                 container_data = {
                     "name": container_query.Container.name,
-                    "image": container_query.InternalContainerId.image
+                    "image": container_query.InternalContainerId.image,
+                    "server": server_name.name if server_name else "Unknown"
                 }
             
             if alert is None:
@@ -57,7 +62,7 @@ class Alert:
         self.url = webhook_url
         self.client = Discord(url=webhook_url)
         
-    def send_alert(self, data: dict, container_data: dict = None):
+    def send_alert(self, data: dict, etc_data: dict = None):
         try:
             # 데이터 검증
             if not all(key in data for key in ['data', 'command', 'process', 'event_id', 'cgroup_id', 'container_id', ]):
@@ -70,7 +75,7 @@ class Alert:
                 avatar_url="https://t3.ftcdn.net/jpg/01/93/90/82/360_F_193908219_ak4aB1PzlhizUVGLOVowzHICc3tl6WeX.jpg",
                 embeds=[{
                     "title": "LSM Block Alert",
-                    "description": f"컨테이너에서 {"의심스런" if ret_val == -1 else "아래"} 접근이 {"차단" if ret_val == -1 else "허용"} 되었습니다.",
+                    "description": f"[{etc_data["server"]}] 컨테이너에서 {"의심스런" if ret_val == -1 else "아래"} 접근이 {"차단" if ret_val == -1 else "허용"} 되었습니다.",
                     "fields": [
                         {
                         "name": "🚨 Event ID",
@@ -94,7 +99,7 @@ class Alert:
                         },
                         {
                         "name": "📦 Container Information",
-                        "value": f"NAME: {container_data["name"] if container_data else "None"}, Image: {container_data["image"] if container_data else "None"}\nMNT_NS: {data['container_id']['mnt_ns']}\nPID_NS: {data['container_id']['pid_ns']}\nCGROUP_ID: {data['cgroup_id']}"
+                        "value": f"NAME: {etc_data["name"] if etc_data else "None"}, Image: {etc_data["image"] if etc_data else "None"}\nMNT_NS: {data['container_id']['mnt_ns']}\nPID_NS: {data['container_id']['pid_ns']}\nCGROUP_ID: {data['cgroup_id']}"
                         },
                         {
                         "name": "👤 Process Information",
