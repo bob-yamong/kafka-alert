@@ -140,8 +140,8 @@ class Consumer(MessageQueue):
                     await asyncio.sleep(1)
         
         if not hasattr(self, '_consumer_task'):
-            timeout_ms = os.getenv('KAFKA_CONSUMER_TIMEOUT_MS', 1000)
-            max_records = os.getenv('KAFKA_CONSUMER_MAX_RECORDS', 50)
+            timeout_ms = int(os.getenv('KAFKA_CONSUMER_TIMEOUT_MS', 1000))
+            max_records = int(os.getenv('KAFKA_CONSUMER_MAX_RECORDS', 50))
             self._consumer_task = asyncio.create_task(run_consumer(timeout_ms, max_records))
     
     async def stop(self):
