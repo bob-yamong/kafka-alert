@@ -2,7 +2,6 @@ from typing import Callable, List, Dict
 import asyncio
 import json
 import time
-import os
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 from contextlib import contextmanager
@@ -68,9 +67,7 @@ class MessageQueue:
                     fetch_max_bytes=52428800,
                     metadata_max_age_ms=300000,
                     reconnect_backoff_ms=5000,
-                    reconnect_backoff_max_ms=10000,
-                    max_partition_fetch_bytes=1024 * 1024 * 5,  # 파티션당 5MB
-                    max_poll_records=50,                        # poll()당 최대 레코드 수
+                    reconnect_backoff_max_ms=10000
                 )
             except NoBrokersAvailable:
                 if attempt < self.max_retries - 1:
@@ -102,49 +99,36 @@ class Consumer(MessageQueue):
         self.event_bus = event_bus
         self.is_running = False
 
-    async def start(self, timeout_ms = 1000, max_records=50):
-        async def run_consumer(timeout_ms=1000, max_records=50):
+    async def start(self):
+        async def run_consumer():
             logger.info(f"Starting consumer for topics: {self.topics}")
             while True:
                 try:
-                    # poll()을 사용하여 최대 50개의 메시지를 가져옴 (timeout_ms: 1초)
-                    messages = await asyncio.to_thread(self.client.poll, timeout_ms=timeout_ms, max_records=max_records)
-                    logger.info(f"Received {len(messages)} messages")
-                    for topic_partition, topic_messages in messages.items():
-                        topic = topic_partition.topic
-                        subscribers = self.event_bus.get_subscribers(topic)
+                    message = await asyncio.to_thread(next, self.client)
+                    if message:
+                        key = message.key
+                        value = message.value
+                        topic = message.topic
                         
-                        if not subscribers:
-                            continue
-                            
-                        logger.info(f"Processing {len(topic_messages)} messages for topic {topic}")
+                        logger.debug(f"Message topic: {topic}, partition: {message.partition}, offset: {message.offset}")
+                        if isinstance(value, str):
+                            value = json.loads(value)
+                        
+                        subscribers = self.event_bus.get_subscribers(topic)
                         logger.info(f"callbacks for topic {topic}({len(subscribers)}): {', '.join([str(callback) for callback in subscribers])}")
                         
-                        # 각 메시지에 대해 모든 구독자의 콜백을 실행
-                        for message in topic_messages:
-                            key = message.key
-                            value = message.value
-                            
-                            if isinstance(value, str):
-                                value = json.loads(value)
-                            
-                            logger.debug(f"Message topic: {topic}, partition: {message.partition}, offset: {message.offset}")
-                            
-                            result = await asyncio.gather(
-                                *[callback(key, value) for callback in subscribers]
-                            )
-                            logger.debug(f"Gather completed for topic {topic}: {result}")
-                            
+                        result = await asyncio.gather(
+                            *[callback(key, value) for callback in subscribers]
+                        )
+                        logger.debug(f"Gather completed for topic {topic}: {result}")
                 except Exception as e:
                     import traceback
                     logger.error(traceback.format_exc())
-                    logger.error(f"Error reading messages: {e}")
+                    logger.error(f"Error reading message: {e}")
                     await asyncio.sleep(1)
         
         if not hasattr(self, '_consumer_task'):
-            timeout_ms = int(os.getenv('KAFKA_CONSUMER_TIMEOUT_MS', 1000))
-            max_records = int(os.getenv('KAFKA_CONSUMER_MAX_RECORDS', 50))
-            self._consumer_task = asyncio.create_task(run_consumer(timeout_ms, max_records))
+            self._consumer_task = asyncio.create_task(run_consumer())
     
     async def stop(self):
         if hasattr(self, '_consumer_task'):
