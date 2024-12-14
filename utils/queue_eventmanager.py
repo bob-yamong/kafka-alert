@@ -107,7 +107,7 @@ class Consumer(MessageQueue):
                 try:
                     # poll()을 사용하여 최대 50개의 메시지를 가져옴 (timeout_ms: 1초)
                     messages = await asyncio.to_thread(self.client.poll, timeout_ms=timeout_ms, max_records=max_records)
-                    
+                    logger.info(f"Received {len(messages)} messages")
                     for topic_partition, topic_messages in messages.items():
                         topic = topic_partition.topic
                         subscribers = self.event_bus.get_subscribers(topic)
