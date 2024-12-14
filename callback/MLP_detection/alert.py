@@ -60,11 +60,11 @@ class Alert:
                 raise ValueError("Missing required fields in data")
 
             self.client.post(
-                username="SVM Alert",
+                username="MLP Alert",
                 avatar_url="https://t3.ftcdn.net/jpg/01/93/90/82/360_F_193908219_ak4aB1PzlhizUVGLOVowzHICc3tl6WeX.jpg",
                 embeds=[{
-                    "title": "SVM Detection Alert",
-                    "description": "컨테이너에서 이상 로그가 감지되었습니다. SVM Detection Alert System에서 알립니다.",
+                    "title": "MLP Detection Alert",
+                    "description": "컨테이너에서 이상 로그가 감지되었습니다. MLP Detection Alert System에서 알립니다.",
                     "fields": [
                         {
                         "name": "🏠 Container Name",
@@ -103,7 +103,7 @@ class Alert:
                     ],
                     "color": 0xFF0000,  
                     "footer": {
-                        "text": "SVM Detection Alert System",
+                        "text": "MLP Detection Alert System",
                         "icon_url": "https://avatars.githubusercontent.com/u/187281017?v=4"
                     },
                     "timestamp": datetime.now().isoformat()
