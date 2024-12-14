@@ -68,7 +68,9 @@ class MessageQueue:
                     fetch_max_bytes=52428800,
                     metadata_max_age_ms=300000,
                     reconnect_backoff_ms=5000,
-                    reconnect_backoff_max_ms=10000
+                    reconnect_backoff_max_ms=10000,
+                    fetch_max_bytes=1024 * 1024 * 100,          # 전체 fetch당 10MB
+                    max_poll_records=50,                        # poll()당 최대 레코드 수
                 )
             except NoBrokersAvailable:
                 if attempt < self.max_retries - 1:
