@@ -1,0 +1,116 @@
+name: Bandit Security Scan
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    types:
+      - opened
+      - ready_for_review
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      
+      - name: Install bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+          
+      - name: Run Bandit scan
+        run: |
+          bandit -r . -f json -o bandit-results.json || true
+      
+      - name: Format results to markdown
+        run: |
+          python3 << 'EOF' > bandit-report.md
+          import json
+          from datetime import datetime
+          
+          with open('bandit-results.json', 'r') as f:
+              data = json.load(f)
+          
+          def write_report():
+              report = []
+              
+              # 헤더 추가
+              report.append("# 🔒 Bandit Security Scan Results")
+              report.append(f"Generated on: {data['generated_at']}\n")
+              
+              # 통계 정보 표
+              report.append("## 📊 Overall Statistics")
+              report.append("\n| Metric | Value |")
+              report.append("|--------|-------|")
+              
+              totals = data['metrics']['_totals']
+              stats = [
+                  ("Total Files", f"{len(data['metrics']) - 1}"),
+                  ("Lines of Code", f"{totals['loc']:,}"),
+                  ("Issues Found", f"{len(data['results'])}"),
+                  ("High Severity Issues", f"{totals['SEVERITY.HIGH']}"),
+                  ("Medium Severity Issues", f"{totals['SEVERITY.MEDIUM']}"),
+                  ("Low Severity Issues", f"{totals['SEVERITY.LOW']}"),
+                  ("High Confidence Issues", f"{totals['CONFIDENCE.HIGH']}"),
+                  ("Medium Confidence Issues", f"{totals['CONFIDENCE.MEDIUM']}"),
+                  ("Low Confidence Issues", f"{totals['CONFIDENCE.LOW']}")
+              ]
+              
+              for metric, value in stats:
+                  report.append(f"| {metric} | {value} |")
+              report.append("")
+              
+              # 취약점이 발견된 경우에만 상세 정보 추가
+              if data['results']:
+                  report.append("## 🚨 Security Issues Found\n")
+                  for idx, issue in enumerate(data['results'], 1):
+                      report.append(f"### Issue {idx}: {issue['test_name']}")
+                      
+                      # 이슈 상세 정보 표
+                      report.append("\n| Category | Detail |")
+                      report.append("|----------|---------|")
+                      report.append(f"| Description | {issue['issue_text']} |")
+                      report.append(f"| Severity | {issue['issue_severity']} |")
+                      report.append(f"| Confidence | {issue['issue_confidence']} |")
+                      report.append(f"| Location | {issue['filename']}:{issue['line_number']} |")
+                      if 'issue_cwe' in issue:
+                          report.append(f"| CWE | [{issue['issue_cwe']['id']}]({issue['issue_cwe']['link']}) |")
+                      report.append(f"| More Info | {issue['more_info']} |")
+                      
+                      report.append("\n**Code:**")
+                      report.append(f"```python\n{issue['code'].strip()}\n```\n")
+              else:
+                  report.append("## ✅ No Security Issues Found")
+                  report.append("No security issues were detected in the scan.\n")
+              
+              return "\n".join(report)
+          
+          with open('bandit-report.md', 'w') as f:
+              f.write(write_report())
+          EOF
+      
+      - name: Get current time
+        id: current-time
+        run: echo "timestamp=$(TZ='Asia/Seoul' date '+%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+
+      - name: Create Issue From File
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: 🔒 Bandit Security Scan Report (${{ steps.current-time.outputs.timestamp }})
+          content-filepath: ./bandit-report.md
+          labels: |
+            security
+            automated-scan
